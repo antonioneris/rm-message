@@ -1,0 +1,68 @@
+#!/bin/bash
+if [ -z "$1" ]; then
+echo "Sintaxe :  rm-message -<option> valor"
+echo "-f : voce deleta dodas as menssagens enviadas de um email Ex: rm-message -f contato@dominio.com dominio.com.br"
+echo "-s : voce deleta todos os email com o mesmo subjetc Ex: rm-message -s dominio.com.br 'Assunto do email'"
+echo "-m : voce deleta dentro do email especificado todos os emails com um assunto especifico Ex: rm-message -m contato@dominio.com.br 'Assunto do email'"
+else
+    if [ $1 = "-f" ];then
+        
+        if [ -z $2 ]; then
+            echo "Entre com o email do from"
+            exit
+        else
+            from=$2
+            dominio=$3
+            echo " Deletando Messagens"
+            zmprov -l gaa | grep $dominio > /tmp/temp_email
+            for acct in `cat /tmp/temp_email` ; do
+                echo "Procurando no email $acct  pelo envio from: $from"
+                for msg in `/opt/zimbra/bin/zmmailbox -z -m "$acct" s -l 999 -t message "from:$from "|awk '{ if (NR!=1) {print}}' | grep -v -e Id -e "----" -e "^$" | awk '{ print $2 }'`
+                do
+                echo "Deletando "$msg" do email "$acct""
+                /opt/zimbra/bin/zmmailbox -z -m $acct dm $msg
+                done
+            done
+        fi
+    fi
+
+    if [ $1 = "-s" ];then
+        
+        if [ -z "$2" ]; then
+            echo "Entre com o assunto a ser deletado de todas as contas de email"
+            exit
+        else
+            assunto=$3
+            dominio=$2
+            echo " Iniciando Procura e Delete"
+            zmprov -l gaa | grep $dominio > /tmp/temp_email
+            for acct in `cat /tmp/temp_email` ; do
+                echo "Procurando no email $acct  Pelo Assunto: $assunto"
+                for msg in `/opt/zimbra/bin/zmmailbox -z -m "$acct" s -l 999 -t message "subject:$assunto"|awk '{ if (NR!=1) {print}}' | grep -v -e Id -e "----" -e "^$" | awk '{ print $2 }'`
+                do
+                echo "Deletando.."$msg" do email "$acct""
+                /opt/zimbra/bin/zmmailbox -z -m $acct dm $msg
+                done
+            done
+        fi
+    fi
+
+    if [ $1 = "-m" ];then
+        
+        if [ -z "$2" ]; then
+            echo "Entre com o assunto a ser deletado de todas as contas de email"
+            exit
+        else
+            email=$2
+            assunto=$3
+            echo " Deletando Messagens no email "$email""       
+            echo "Procurando no email $email  Pelo Assunto: $assunto"
+                for msg in `/opt/zimbra/bin/zmmailbox -z -m "$email" s -l 999 -t message "subject:$assunto"|awk '{ if (NR!=1) {print}}' | grep -v -e Id -e "----" -e "^$" | awk '{ print $2 }'`
+                do
+                echo "Deletando.."$msg" do email "$email""
+                /opt/zimbra/bin/zmmailbox -z -m $email dm $msg
+                done
+        fi
+    fi
+
+fi
